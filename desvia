@@ -2,9 +2,6 @@
 const int TRIG_F = 12;   // Frontal - TRIG
 const int ECHO_F = 13;   // Frontal - ECHO
 
-const int TRIG_R = 11;   // Direita - TRIG
-const int ECHO_R = 10;   // Direita - ECHO
-
 // -------------------- Pinos motores ---------------------
 const int PIN_MOTOR_IN1 = 2;
 const int PIN_MOTOR_IN2 = 3;
@@ -42,7 +39,7 @@ void parar(void){
   digitalWrite(PIN_MOTOR_IN4, LOW);
 }
 
-// Girar à direita (pivô: roda esquerda para frente, direita para trás)
+// Girar à direita
 void girar_direita(void){
   digitalWrite(PIN_MOTOR_IN1, HIGH);
   digitalWrite(PIN_MOTOR_IN2, LOW);
@@ -52,15 +49,15 @@ void girar_direita(void){
 
 // -------------------- Ultrasom (HC-SR04) ----------------
 long distancia_cm(int trigPin, int echoPin){
-  // Pulso de trigger (10us)
-  digitalWrite(trigPin, LOW);      delayMicroseconds(2);
-  digitalWrite(trigPin, HIGH);     delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
   digitalWrite(trigPin, LOW);
 
-  // Timeout ~25ms (≈ 4,3 m). Se estourar, retorna "longe".
   unsigned long dur = pulseIn(echoPin, HIGH, 25000UL);
-  if (dur == 0) return 400;  // fora de alcance -> 400 cm
-  return (long)(dur / 58UL); // conversão aproximada para cm
+  if (dur == 0) return 400;  // fora de alcance
+  return (long)(dur / 58UL);
 }
 
 // -------------------- Setup -----------------------------
@@ -72,38 +69,31 @@ void setup(){
   pinMode(PIN_MOTOR_IN4, OUTPUT);
   parar();
 
-  // Sensores ultrassom
+  // Sensor ultrassom frontal
   pinMode(TRIG_F, OUTPUT);
   pinMode(ECHO_F, INPUT);
-  pinMode(TRIG_R, OUTPUT);
-  pinMode(ECHO_R, INPUT);
 
   // Serial
   Serial.begin(9600);
   delay(200);
-  Serial.println("Inicializado. sensores: Frente (D12/D13) e Direita (D11/D10)");
+  Serial.println("Inicializado. Sensor frontal ativo (D12/D13)");
 }
 
 // -------------------- Loop principal --------------------
 void loop(){
   long distF = distancia_cm(TRIG_F, ECHO_F); // Frente
-  long distR = distancia_cm(TRIG_R, ECHO_R); // Direita (monitoramento)
 
-  // Prints separados (ajuste seu Serial Monitor para 115200 baud)
   Serial.print("Frente [cm]: ");
-  Serial.print(distF);
-  Serial.print("  |  Direita [cm]: ");
-  Serial.println(distR);
+  Serial.println(distF);
 
   // Lógica de desvio: se tem obstáculo à frente, recua e gira à direita
   if (distF <= LIMIAR_F_CM){
-    parar();               delay(100);
-    mover_tras();          delay(RECUO_MS);
-    parar();               delay(100);
-    girar_direita();       delay(GIRO_DIR_MS);
-    parar();               delay(50);
+    parar();         delay(100);
+    mover_tras();    delay(RECUO_MS);
+    parar();         delay(100);
+    girar_direita(); delay(GIRO_DIR_MS);
+    parar();         delay(50);
   } else {
-    // caminho livre à frente -> segue em frente
     mover_frente();
   }
 
